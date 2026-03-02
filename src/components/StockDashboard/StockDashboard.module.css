@@ -1,0 +1,156 @@
+/* StockDashboard.module.css */
+
+.container {
+    padding: 28px;
+    font-family: 'Rajdhani', monospace;
+    color: #e6edf3;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* BACK BUTTON */
+.backButton {
+    display: none; /* Hidden — sidebar handles navigation in the new layout */
+}
+
+/* TITLE */
+.title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #e6edf3;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+/* FORM / FILTER BAR */
+.filterForm {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 14px 18px;
+}
+
+.inputField {
+    padding: 8px 12px;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+    background-color: #0d1117;
+    color: #e6edf3;
+    font-family: 'Rajdhani', monospace;
+    transition: border-color 0.2s;
+}
+
+.inputField:focus {
+    border-color: #00d4c8;
+    box-shadow: 0 0 0 2px rgba(0, 212, 200, 0.15);
+}
+
+/* Restyle the native date picker icon to be visible on dark bg */
+.inputField::-webkit-calendar-picker-indicator {
+    filter: brightness(0) invert(1);
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.fetchButton {
+    padding: 8px 18px;
+    background-color: #1c2230;
+    color: #00d4c8;
+    border: 1px solid #00d4c8;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    font-family: 'Rajdhani', monospace;
+    transition: all 0.2s;
+}
+
+.fetchButton:hover:not(:disabled) {
+    background-color: #00d4c8;
+    color: #0d1117;
+}
+
+.fetchButton:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* STATES */
+.errorState {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.08);
+    border: 1px solid rgba(255, 107, 107, 0.25);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+}
+
+.emptyState {
+    color: #8b949e;
+    background: #161b22;
+    border: 1px dashed #30363d;
+    padding: 32px 20px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
+
+.loadingState {
+    color: #00d4c8;
+    background: #161b22;
+    border: 1px solid #30363d;
+    padding: 32px 20px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 13px;
+    letter-spacing: 1px;
+}
+
+/* TABLE */
+.tableContainer {
+    overflow-x: auto;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 13px;
+}
+
+.table th {
+    background-color: #0d1117;
+    padding: 12px 16px;
+    border-bottom: 1px solid #30363d;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #8b949e;
+    text-transform: uppercase;
+}
+
+.table td {
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(48, 54, 61, 0.6);
+    color: #e6edf3;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table tbody tr:hover {
+    background: rgba(0, 212, 200, 0.04);
+}

@@ -1,0 +1,118 @@
+/* App.module.css */
+:root {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-card: #1c2230;
+  --accent-teal: #00d4c8;
+  --accent-orange: #ff9f43;
+  --text-primary: #e6edf3;
+  --text-muted: #8b949e;
+  --border: #30363d;
+  --nav-height: 56px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Rajdhani', 'Orbitron', monospace;
+}
+
+.appShell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+/* NAVBAR */
+.navbar {
+  height: var(--nav-height);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navLogo {
+  font-size: 22px;
+  color: var(--accent-teal);
+}
+
+.navTitle {
+  font-family: 'Orbitron', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+}
+
+.navLinks {
+  display: flex;
+  gap: 28px;
+}
+
+.navLinks a {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.navLinks a:hover {
+  color: var(--accent-teal);
+}
+
+/* BODY LAYOUT */
+.body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 210px;
+  min-width: 210px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  height: calc(100vh - var(--nav-height));
+  position: sticky;
+  top: var(--nav-height);
+}
+
+/* MAIN */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  height: calc(100vh - var(--nav-height));
+  padding: 28px;
+  background: var(--bg-primary);
+}
+
+.placeholder {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin-top: 80px;
+  text-align: center;
+  letter-spacing: 1px;
+}
