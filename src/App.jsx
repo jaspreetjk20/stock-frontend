@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Homepage from './components/Homepage/Homepage';
-//  import StockDashboard from './components/StockDashboard';
+import CompanyDashboard from './components/CompanyDashboard/CompanyDashboard';
 import styles from './App.module.css';
 
 const App = () => {
@@ -8,6 +8,7 @@ const App = () => {
         <BrowserRouter>
             <Routes>
                 <Route path ="/" element={<Homepage/>}/>
+                <Route path="/stocks/:companySymbol" element={<CompanyDashboard />}/>
             </Routes>
         </BrowserRouter>
     );
