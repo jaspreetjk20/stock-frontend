@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import styles from './CompanyDashboard.module.css';
+import { io } from 'socket.io-client'; //Websocket feature import
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL; //Live server URL
 const timePeriods = ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y', 'YTD'];
 
 //Function to set the start and end date
@@ -90,6 +92,36 @@ const CompanyDashboard = () => {
         }
     }, [companySymbol, activePeriod]); 
 
+
+    //Live data
+    useEffect(() => {
+
+        if(loading) return;//Don't connect to websocket until historical data is finished loading
+        
+        const socket = io(WEBSOCKET_URL); //Connect to the websocket server
+
+        socket.emit('subscribe', companySymbol); //Tell the server which company 
+
+        socket.on('live_data', (newTick) => { //Dummy ticks from server
+
+            setError(null);
+            setChartData((prevData) => {
+                const tickTime = new Date(newTick.time).toLocaleTimeString('en-GB', { 
+                    hour: '2-digit', minute: '2-digit', second: '2-digit' 
+                });
+                const formattedTick = {
+                    ...newTick,
+                    time: tickTime
+                };
+                return [...prevData, formattedTick]; //Attach the new tick
+            });
+        });
+
+        return () => { //disconnect when user leaves page/changes company
+            socket.disconnect();
+        };
+    }, [companySymbol, loading]);
+
     // Show the latest data on the top in the table
     const latestData = chartData.length > 0 ? chartData[chartData.length - 1] : null;
 
@@ -169,6 +201,7 @@ const CompanyDashboard = () => {
                                 strokeWidth={3} 
                                 dot={{ fill: '#3b82f6', r: 4 }} 
                                 activeDot={{ r: 6 }}
+                                isAnimationActive={false}
                             />
                         </LineChart>
                     </ResponsiveContainer>
