@@ -11,7 +11,6 @@ const CompanySearch = () => {
     const [allCompanies, setAllCompanies] = useState([]); // Stores the full list fetched from backend
     const [filteredCompanies, setFilteredCompanies] = useState([]); // Stores the list filtered by typing
     const [inputVal, setInputVal] = useState('');  // Stores what the user typed
-    const [showDropDown, setShowDropDown] = useState(false); // Toggles the dropdown visibility
     const [loading, setLoading] = useState(true);
 
     const searchContainerRef = useRef(null);
@@ -44,15 +43,13 @@ const CompanySearch = () => {
         setInputVal(value);
 
         if (value.length > 0) {
-            // Filter based on symbol or company name 
             const filtered = allCompanies.filter((company) =>
                 company.company_name.toLowerCase().includes(value.toLowerCase()) ||
                 company.symbol.toLowerCase().includes(value.toLowerCase())
             );
             setFilteredCompanies(filtered);
-            setShowDropDown(true);
         } else {
-            setShowDropDown(false);
+            setFilteredCompanies([]);
         }
     };
 
@@ -62,19 +59,9 @@ const CompanySearch = () => {
         navigate(`/stocks/${companySymbol}`); // Navigate to dashboard
     };
 
-    // 4. Handle clicking outside to close dropdown
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
-                setShowDropDown(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [searchContainerRef]);
 
+
+    const displayedCompanies = inputVal ? filteredCompanies : allCompanies;
 
     return (
         <div className={styles.searchContainer} ref={searchContainerRef}>
@@ -86,31 +73,41 @@ const CompanySearch = () => {
                     onChange={handleInputChange}
                     className={styles.searchInput}
                     disabled={loading}
-                    onFocus={() => inputVal && filteredCompanies.length > 0 && setShowDropDown(true)}
                 />
                 <button className={styles.analyzeButton}>
                     Search
                 </button>
             </div>
 
-            
-            {showDropDown && filteredCompanies.length > 0 && (
-                <ul className={styles.dropdownList}>
-                    {filteredCompanies.slice(0, 8).map((company) => ( // Limit to 8 results for neatness
-                        <li
-                            key={company.symbol}
-                            className={styles.dropdownItem}
-                            onClick={() => handleSelectCompany(company.symbol)}
-                        >
-                            <span className={styles.companySymbol}>{company.symbol}</span>
-                            <span className={styles.companyName}>{company.company_name}</span>
-                        </li>
-                    ))}
-                </ul>
-            )}
-            
-            {showDropDown && filteredCompanies.length === 0 && inputVal && (
-                <div className={styles.noResults}>No results found.</div>
+            {!loading && (
+                <div className={styles.tableWrapper}>
+                    <table className={styles.companyTable}>
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Company Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {displayedCompanies.length > 0 ? (
+                                displayedCompanies.map((company) => (
+                                    <tr
+                                        key={company.symbol}
+                                        className={styles.tableRow}
+                                        onClick={() => handleSelectCompany(company.symbol)}
+                                    >
+                                        <td className={styles.companySymbol}>{company.symbol}</td>
+                                        <td className={styles.companyName}>{company.company_name}</td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="2" className={styles.noResults}>No results found.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </div>
     );
