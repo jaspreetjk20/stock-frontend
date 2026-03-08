@@ -58,8 +58,10 @@ const CompanyDashboard = () => {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
+                    // Sort data by date ascending (oldest first) so chart reads left-to-right
+                    const sortedData = [...data.data].sort((a, b) => new Date(a.time) - new Date(b.time));
                     // Format the data for charts
-                    const formattedData = data.data.map(item => { //Iterate over raw API data
+                    const formattedData = sortedData.map(item => { //Iterate over raw API data
                         const dateObj = new Date(item.time); //Convert string to date object
                         const cleanTime = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); //Format date as DD MM
 
