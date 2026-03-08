@@ -53,9 +53,8 @@ const CompanySearch = () => {
         }
     };
 
-    // 3. Handle clicking a dropdown item
+    // 3. Handle clicking a table row
     const handleSelectCompany = (companySymbol) => {
-        setShowDropDown(false);
         navigate(`/stocks/${companySymbol}`); // Navigate to dashboard
     };
 
