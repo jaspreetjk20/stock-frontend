@@ -58,6 +58,22 @@ html, body {
   text-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
 }
 
+.priceVolume {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.volumeBadge {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.1);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+
 .priceStats {
   display: flex;
   align-items: baseline;

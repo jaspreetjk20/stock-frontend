@@ -132,7 +132,12 @@ const CompanyDashboard = () => {
                 <div className={styles.topRow}>
                     <h1 className={styles.stockName}>{companySymbol}</h1>
                     {latestData ? (
-                        <h2 className={styles.currentPrice}>₹{latestData.close.toFixed(2)}</h2>
+                        <div className={styles.priceVolume}>
+                            <h2 className={styles.currentPrice}>₹{latestData.close.toFixed(2)}</h2>
+                            {latestData.volume != null && (
+                                <span className={styles.volumeBadge}>Vol: {Number(latestData.volume).toLocaleString()}</span>
+                            )}
+                        </div>
                     ) : (
                         <h2 className={styles.currentPrice}>--</h2>
                     )}
