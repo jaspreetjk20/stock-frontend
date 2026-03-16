@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import styles from './CompanyDashboard.module.css';
 import { io } from 'socket.io-client'; //Websocket feature import
 
@@ -169,64 +169,153 @@ const CompanyDashboard = () => {
                 )}
             </div>
 
-            {/* Chart Section */}
-            <div className={styles.chartWrapper}>
-                {loading ? (
-                    <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <h3>Loading chart data...</h3>
+            {/* Chart and AI Analysis Section - 60-40 Split */}
+            <div className={styles.chartAnalysisContainer}>
+                {/* Chart Section - 60% */}
+                <div className={styles.chartSection}>
+                    <div className={styles.chartWrapper}>
+                        {loading ? (
+                            <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <h3>Loading chart data...</h3>
+                            </div>
+                        ) : error ? (
+                            <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'red' }}>
+                                <h3>{error}</h3>
+                            </div>
+                        ) : (
+                            <div className={styles.chartScrollContainer}>
+                                <ResponsiveContainer width="100%" height={280}>
+                                    <AreaChart data={chartData}>
+                                        <defs>
+                                            <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.8}/>
+                                                <stop offset="50%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                                                <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.1}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid 
+                                            strokeDasharray="0" 
+                                            vertical={false} 
+                                            stroke="rgba(148, 163, 184, 0.15)" 
+                                            strokeWidth={1}
+                                        />
+                                        <XAxis 
+                                            dataKey="time" 
+                                            tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }} 
+                                            stroke="rgba(148, 163, 184, 0.3)"
+                                            tickLine={false}
+                                            axisLine={{ strokeWidth: 1.5 }}
+                                        />
+                                        <YAxis 
+                                            domain={['auto', 'auto']} 
+                                            tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
+                                            stroke="rgba(148, 163, 184, 0.3)"
+                                            tickLine={false}
+                                            axisLine={{ strokeWidth: 1.5 }}
+                                            orientation="right"
+                                        />
+                                        <Tooltip 
+                                            contentStyle={{
+                                                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                                border: '1px solid rgba(59, 130, 246, 0.3)',
+                                                borderRadius: '8px',
+                                                color: '#e2e8f0',
+                                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                                            }}
+                                            labelStyle={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}
+                                            itemStyle={{ color: '#60a5fa', fontSize: '13px', fontWeight: 600 }}
+                                        />
+                                        <Area 
+                                            type="monotone" 
+                                            dataKey="close" 
+                                            stroke="#ef4444" 
+                                            strokeWidth={2} 
+                                            fill="url(#colorClose)"
+                                            isAnimationActive={false}
+                                            dot={false}
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        )}
                     </div>
-                ) : error ? (
-                    <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'red' }}>
-                        <h3>{error}</h3>
-                    </div>
-                ) : (
-                    <ResponsiveContainer width="100%" height={280}>
-                        <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.1)" />
-                            <XAxis 
-                                dataKey="time" 
-                                tick={{ fontSize: 12, fill: '#94a3b8' }} 
-                                stroke="rgba(148, 163, 184, 0.2)"
-                            />
-                            <YAxis 
-                                domain={['auto', 'auto']} 
-                                tick={{ fontSize: 12, fill: '#94a3b8' }}
-                                stroke="rgba(148, 163, 184, 0.2)"
-                            />
-                            <Tooltip 
-                                contentStyle={{
-                                    backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                                    border: '1px solid rgba(148, 163, 184, 0.2)',
-                                    borderRadius: '8px',
-                                    color: '#e2e8f0'
-                                }}
-                            />
-                            <Line 
-                                type="monotone" 
-                                dataKey="close" 
-                                stroke="#3b82f6" 
-                                strokeWidth={3} 
-                                dot={{ fill: '#3b82f6', r: 4 }} 
-                                activeDot={{ r: 6 }}
-                                isAnimationActive={false}
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                )}
-            </div>
 
-            {/* Time Period Buttons */}
-            <div className={styles.timePeriodContainer}>
-                {timePeriods.map((period) => (
-                    <button
-                        key={period}
-                        className={`${styles.periodButton} ${activePeriod === period ? styles.active : ''}`}
-                        onClick={() => setActivePeriod(period)}
-                        disabled={loading} 
-                    >
-                        {period}
-                    </button>
-                ))}
+                    {/* Time Period Buttons */}
+                    <div className={styles.timePeriodContainer}>
+                        {timePeriods.map((period) => (
+                            <button
+                                key={period}
+                                className={`${styles.periodButton} ${activePeriod === period ? styles.active : ''}`}
+                                onClick={() => setActivePeriod(period)}
+                                disabled={loading} 
+                            >
+                                {period}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* AI Analysis Section - 40% */}
+                <div className={styles.aiAnalysisSection}>
+                    <div className={styles.aiAnalysisWrapper}>
+                        <h3 className={styles.aiAnalysisTitle}>AI Analysis</h3>
+                        <div className={styles.aiAnalysisContent}>
+                            {/* Sentiment Indicator */}
+                            <div className={styles.analysisCard}>
+                                <div className={styles.cardHeader}>
+                                    <span className={styles.cardLabel}>Market Sentiment</span>
+                                    <span className={styles.sentimentBadge}>Bullish</span>
+                                </div>
+                                <p className={styles.cardText}>
+                                    The stock shows strong upward momentum with consistent support levels.
+                                </p>
+                            </div>
+
+                            {/* Key Insights */}
+                            <div className={styles.analysisCard}>
+                                <div className={styles.cardHeader}>
+                                    <span className={styles.cardLabel}>Key Insights</span>
+                                </div>
+                                <ul className={styles.insightsList}>
+                                    <li>Trading above 50-day moving average</li>
+                                    <li>Volume is 15% above average</li>
+                                    <li>Strong support at ₹2450</li>
+                                    <li>Resistance level at ₹2550</li>
+                                </ul>
+                            </div>
+
+                            {/* AI Recommendation */}
+                            <div className={styles.analysisCard}>
+                                <div className={styles.cardHeader}>
+                                    <span className={styles.cardLabel}>AI Recommendation</span>
+                                    <span className={styles.recommendationBadge}>Hold</span>
+                                </div>
+                                <p className={styles.cardText}>
+                                    Current price action suggests holding positions with potential for breakout above ₹2550.
+                                </p>
+                            </div>
+
+                            {/* Risk Assessment */}
+                            <div className={styles.analysisCard}>
+                                <div className={styles.cardHeader}>
+                                    <span className={styles.cardLabel}>Risk Level</span>
+                                </div>
+                                <div className={styles.riskMeter}>
+                                    <div className={styles.riskBar}>
+                                        <div className={styles.riskFill} style={{ width: '45%' }}></div>
+                                    </div>
+                                    <span className={styles.riskText}>Moderate Risk (45%)</span>
+                                </div>
+                            </div>
+
+                            {/* Update Timestamp */}
+                            <div className={styles.analysisFooter}>
+                                <span className={styles.updateTime}>Last updated: 2 minutes ago</span>
+                                <button className={styles.refreshButton}>Refresh Analysis</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Real Data Table Section */}
