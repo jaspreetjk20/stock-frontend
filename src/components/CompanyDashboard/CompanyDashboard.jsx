@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import styles from './CompanyDashboard.module.css';
-import { io } from 'socket.io-client'; //Websocket feature import
+import { io } from 'socket.io-client';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
 const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL; //Live server URL
 const timePeriods = ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y', 'YTD'];
 
-//Function to set the start and end date
 const getDateRange = (period) => {
     const endDate = new Date(); 
     const startDate = new Date();
@@ -23,10 +22,9 @@ const getDateRange = (period) => {
         case 'YTD': startDate.setMonth(0, 1); break; 
         case '1D': 
         default: 
-            startDate.setDate(endDate.getDate() - 1); break; // Yesterday
+            startDate.setDate(endDate.getDate() - 1); break; 
     }
 
-    // Format dates to YYYY-MM-DD 
     return {
         start: startDate.toISOString().split('T')[0],
         end: endDate.toISOString().split('T')[0]
@@ -34,7 +32,6 @@ const getDateRange = (period) => {
 };
 
 const CompanyDashboard = () => {
-
     const { companySymbol } = useParams();
     const [activePeriod, setActivePeriod] = useState('3M'); 
     const [chartData, setChartData] = useState([]);
@@ -47,38 +44,38 @@ const CompanyDashboard = () => {
             setError(null); 
 
             try {
-                //Get dates
                 const { start, end } = getDateRange(activePeriod);
                 
-                // 2. Fetch data from backend for the specified date range
-                const url = `${BACKEND_URL}/stocks/get_stock_data?company_symbol=${companySymbol}&start_date=${start}&end_date=${end}`;
+                // CORRECTED URL: using companySymbol from useParams
+                const url = `${BACKEND_URL}/api/historical-data/historical-data?company_symbol=${companySymbol}&start_date=${start}&end_date=${end}`;
                 console.log(`Fetching ${activePeriod} data from:`, url);
 
                 const response = await fetch(url);
-                const data = await response.json();
+                const result = await response.json();
 
-                if (response.ok && data.success) {
-                    // Sort data by date ascending (oldest first) so chart reads left-to-right
-                    const sortedData = [...data.data].sort((a, b) => new Date(a.time) - new Date(b.time));
-                    // Format the data for charts
-                    const formattedData = sortedData.map(item => { //Iterate over raw API data
-                        const dateObj = new Date(item.time); //Convert string to date object
-                        const cleanTime = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); //Format date as DD MM
+                // CORRECTED DATA DRILLING: result.data.data.candles
+                if (response.ok && result.success && result.data?.data?.candles) {
+                    const rawCandles = result.data.data.candles;
 
-                        return { //Return newly formatted data
-                            ...item,
+                    // Upstox V3 returns arrays: [timestamp, open, high, low, close, volume, ...]
+                    const formattedData = rawCandles.map(item => {
+                        const dateObj = new Date(item[0]);
+                        const cleanTime = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+                        return {
                             time: cleanTime,
-                            open: Number(item.open),
-                            high: Number(item.high),
-                            low: Number(item.low),
-                            close: Number(item.close)
+                            open: Number(item[1]),
+                            high: Number(item[2]),
+                            low: Number(item[3]),
+                            close: Number(item[4]),
+                            volume: Number(item[5])
                         };
-                    });
+                    }).sort((a, b) => new Date(a.time) - new Date(b.time));
                     
-                    setChartData(formattedData); //update state with chart-ready data
+                    setChartData(formattedData);
                 } else {
-                    setError(data.message || "Failed to fetch stock data");
-                    setChartData([]); // Clear chart if no data found
+                    setError(result.message || "No data found for this period");
+                    setChartData([]);
                 }
             } catch (err) {
                 console.error("Fetch error:", err);
@@ -90,12 +87,10 @@ const CompanyDashboard = () => {
         };
 
         if (companySymbol) {
-            fetchHistory(); //hit the API endpoint
+            fetchHistory();
         }
     }, [companySymbol, activePeriod]); 
 
-
-    //Live data
     useEffect(() => {
 
         if(loading) return;//Don't connect to websocket until historical data is finished loading
@@ -119,17 +114,15 @@ const CompanyDashboard = () => {
             });
         });
 
-        return () => { //disconnect when user leaves page/changes company
+        return () => {
             socket.disconnect();
         };
     }, [companySymbol, loading]);
 
-    // Show the latest data on the top in the table
     const latestData = chartData.length > 0 ? chartData[chartData.length - 1] : null;
 
     return (
         <div className={styles.dashboardContainer}>
-            {/* Header Section */}
             <div className={styles.headerInfo}>
                 <div className={styles.topRow}>
                     <h1 className={styles.stockName}>{companySymbol}</h1>
@@ -148,99 +141,41 @@ const CompanyDashboard = () => {
                 {latestData && (
                     <div className={styles.priceStats}>
                         <div className={styles.ohlc}>
-                            <div>
-                                <strong>Open</strong>
-                                <span className={styles.value}>{latestData.open.toFixed(2)}</span>
-                            </div>
-                            <div>
-                                <strong>High</strong>
-                                <span className={styles.value}>{latestData.high.toFixed(2)}</span>
-                            </div>
-                            <div>
-                                <strong>Low</strong>
-                                <span className={styles.value}>{latestData.low.toFixed(2)}</span>
-                            </div>
-                            <div>
-                                <strong>Close</strong>
-                                <span className={styles.value}>{latestData.close.toFixed(2)}</span>
-                            </div>
+                            <div><strong>Open</strong><span className={styles.value}>{latestData.open.toFixed(2)}</span></div>
+                            <div><strong>High</strong><span className={styles.value}>{latestData.high.toFixed(2)}</span></div>
+                            <div><strong>Low</strong><span className={styles.value}>{latestData.low.toFixed(2)}</span></div>
+                            <div><strong>Close</strong><span className={styles.value}>{latestData.close.toFixed(2)}</span></div>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Chart and AI Analysis Section - 60-40 Split */}
             <div className={styles.chartAnalysisContainer}>
-                {/* Chart Section - 60% */}
                 <div className={styles.chartSection}>
                     <div className={styles.chartWrapper}>
                         {loading ? (
-                            <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <h3>Loading chart data...</h3>
-                            </div>
+                            <div className={styles.centerMessage}><h3>Loading chart data...</h3></div>
                         ) : error ? (
-                            <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'red' }}>
-                                <h3>{error}</h3>
-                            </div>
+                            <div className={styles.centerMessage} style={{ color: 'red' }}><h3>{error}</h3></div>
                         ) : (
-                            <div className={styles.chartScrollContainer}>
-                                <ResponsiveContainer width="100%" height={280}>
-                                    <AreaChart data={chartData}>
-                                        <defs>
-                                            <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.8}/>
-                                                <stop offset="50%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                                                <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.1}/>
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid 
-                                            strokeDasharray="0" 
-                                            vertical={false} 
-                                            stroke="rgba(148, 163, 184, 0.15)" 
-                                            strokeWidth={1}
-                                        />
-                                        <XAxis 
-                                            dataKey="time" 
-                                            tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }} 
-                                            stroke="rgba(148, 163, 184, 0.3)"
-                                            tickLine={false}
-                                            axisLine={{ strokeWidth: 1.5 }}
-                                        />
-                                        <YAxis 
-                                            domain={['auto', 'auto']} 
-                                            tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
-                                            stroke="rgba(148, 163, 184, 0.3)"
-                                            tickLine={false}
-                                            axisLine={{ strokeWidth: 1.5 }}
-                                            orientation="right"
-                                        />
-                                        <Tooltip 
-                                            contentStyle={{
-                                                backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                                                border: '1px solid rgba(59, 130, 246, 0.3)',
-                                                borderRadius: '8px',
-                                                color: '#e2e8f0',
-                                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
-                                            }}
-                                            labelStyle={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}
-                                            itemStyle={{ color: '#60a5fa', fontSize: '13px', fontWeight: 600 }}
-                                        />
-                                        <Area 
-                                            type="monotone" 
-                                            dataKey="close" 
-                                            stroke="#ef4444" 
-                                            strokeWidth={2} 
-                                            fill="url(#colorClose)"
-                                            isAnimationActive={false}
-                                            dot={false}
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
+                            <ResponsiveContainer width="100%" height={280}>
+                                <AreaChart data={chartData}>
+                                    <defs>
+                                        <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#60a5fa" stopOpacity={0.8}/>
+                                            <stop offset="100%" stopColor="#1d4ed8" stopOpacity={0.1}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(148, 163, 184, 0.15)" />
+                                    <XAxis dataKey="time" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                    <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11, fill: '#94a3b8' }} orientation="right" axisLine={false} tickLine={false} />
+                                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                                    <Area type="monotone" dataKey="close" stroke="#3b82f6" strokeWidth={2} fill="url(#colorClose)" isAnimationActive={false} />
+                                </AreaChart>
+                            </ResponsiveContainer>
                         )}
                     </div>
 
-                    {/* Time Period Buttons */}
                     <div className={styles.timePeriodContainer}>
                         {timePeriods.map((period) => (
                             <button
@@ -255,70 +190,22 @@ const CompanyDashboard = () => {
                     </div>
                 </div>
 
-                {/* AI Analysis Section - 40% */}
                 <div className={styles.aiAnalysisSection}>
                     <div className={styles.aiAnalysisWrapper}>
                         <h3 className={styles.aiAnalysisTitle}>AI Analysis</h3>
                         <div className={styles.aiAnalysisContent}>
-                            {/* Sentiment Indicator */}
                             <div className={styles.analysisCard}>
                                 <div className={styles.cardHeader}>
                                     <span className={styles.cardLabel}>Market Sentiment</span>
                                     <span className={styles.sentimentBadge}>Bullish</span>
                                 </div>
-                                <p className={styles.cardText}>
-                                    The stock shows strong upward momentum with consistent support levels.
-                                </p>
-                            </div>
-
-                            {/* Key Insights */}
-                            <div className={styles.analysisCard}>
-                                <div className={styles.cardHeader}>
-                                    <span className={styles.cardLabel}>Key Insights</span>
-                                </div>
-                                <ul className={styles.insightsList}>
-                                    <li>Trading above 50-day moving average</li>
-                                    <li>Volume is 15% above average</li>
-                                    <li>Strong support at ₹2450</li>
-                                    <li>Resistance level at ₹2550</li>
-                                </ul>
-                            </div>
-
-                            {/* AI Recommendation */}
-                            <div className={styles.analysisCard}>
-                                <div className={styles.cardHeader}>
-                                    <span className={styles.cardLabel}>AI Recommendation</span>
-                                    <span className={styles.recommendationBadge}>Hold</span>
-                                </div>
-                                <p className={styles.cardText}>
-                                    Current price action suggests holding positions with potential for breakout above ₹2550.
-                                </p>
-                            </div>
-
-                            {/* Risk Assessment */}
-                            <div className={styles.analysisCard}>
-                                <div className={styles.cardHeader}>
-                                    <span className={styles.cardLabel}>Risk Level</span>
-                                </div>
-                                <div className={styles.riskMeter}>
-                                    <div className={styles.riskBar}>
-                                        <div className={styles.riskFill} style={{ width: '45%' }}></div>
-                                    </div>
-                                    <span className={styles.riskText}>Moderate Risk (45%)</span>
-                                </div>
-                            </div>
-
-                            {/* Update Timestamp */}
-                            <div className={styles.analysisFooter}>
-                                <span className={styles.updateTime}>Last updated: 2 minutes ago</span>
-                                <button className={styles.refreshButton}>Refresh Analysis</button>
+                                <p className={styles.cardText}>Analysis based on historical patterns suggests upward momentum.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Real Data Table Section */}
             <div className={styles.tableContainer}>
                 <h3 className={styles.tableTitle}>Price History</h3>
                 {chartData.length > 0 ? (
@@ -333,7 +220,6 @@ const CompanyDashboard = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {/* Reverse the array so newest dates appear at the top */}
                             {chartData.slice().reverse().map((row, index) => (
                                 <tr key={index}>
                                     <td>{row.time}</td>
@@ -346,7 +232,7 @@ const CompanyDashboard = () => {
                         </tbody>
                     </table>
                 ) : (
-                    <p>No historical data available for this time period.</p>
+                    <p>No historical data available.</p>
                 )}
             </div>
         </div>

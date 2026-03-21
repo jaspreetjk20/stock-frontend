@@ -20,11 +20,11 @@ const CompanySearch = () => {
         const fetchCompanies = async () => {
             try {
                 console.log("Fetching from:", `${BACKEND_URL}/stocks/get_company_list/`); // DEBUG LOG 1
-                const response = await fetch(`${BACKEND_URL}/stocks/get_company_list/`);
+                const response = await fetch(`${BACKEND_URL}/api/companies`);
                 const data = await response.json();
                 console.log("Data received from backend:", data); // DEBUG LOG 2
                 if (response.ok) {
-                    setAllCompanies(data.companies);
+                    setAllCompanies(data.data);
                 } else {
                     console.error("Failed to fetch companies:", data.message);
                 }
@@ -44,7 +44,7 @@ const CompanySearch = () => {
 
         if (value.length > 0) {
             const filtered = allCompanies.filter((company) =>
-                company.company_name.toLowerCase().includes(value.toLowerCase()) ||
+                company.name.toLowerCase().includes(value.toLowerCase()) ||
                 company.symbol.toLowerCase().includes(value.toLowerCase())
             );
             setFilteredCompanies(filtered);
