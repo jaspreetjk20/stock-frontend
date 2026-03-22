@@ -19,7 +19,7 @@ const CompanySearch = () => {
     useEffect(() => {
         const fetchCompanies = async () => {
             try {
-                console.log("Fetching from:", `${BACKEND_URL}/stocks/get_company_list/`); // DEBUG LOG 1
+                //console.log("Fetching from:", `${BACKEND_URL}/stocks/get_company_list/`); // DEBUG LOG 1
                 const response = await fetch(`${BACKEND_URL}/api/companies`);
                 const data = await response.json();
                 console.log("Data received from backend:", data); // DEBUG LOG 2

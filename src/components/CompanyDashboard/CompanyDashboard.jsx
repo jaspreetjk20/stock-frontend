@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import styles from './CompanyDashboard.module.css';
 import { io } from 'socket.io-client';
+import ReactMarkdown from 'react-markdown'; // Added for formatting reports
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
-const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL; //Live server URL
+const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL; 
 const timePeriods = ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y', 'YTD'];
 
 const getDateRange = (period) => {
@@ -38,6 +39,14 @@ const CompanyDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    //AI Analysis States
+    const [aiVerdict, setAiVerdict] = useState(null);
+    const [aiReports, setAiReports] = useState(null);
+    const [verdictLoading, setVerdictLoading] = useState(true);
+    const [reportsLoading, setReportsLoading] = useState(false);
+    const reportsEndRef = useRef(null); 
+
+    // 1. Fetch Historical Chart Data
     useEffect(() => {
         const fetchHistory = async () => {
             setLoading(true);
@@ -45,19 +54,13 @@ const CompanyDashboard = () => {
 
             try {
                 const { start, end } = getDateRange(activePeriod);
-                
-                // CORRECTED URL: using companySymbol from useParams
                 const url = `${BACKEND_URL}/api/historical-data/historical-data?company_symbol=${companySymbol}&start_date=${start}&end_date=${end}`;
-                console.log(`Fetching ${activePeriod} data from:`, url);
-
+                
                 const response = await fetch(url);
                 const result = await response.json();
 
-                // CORRECTED DATA DRILLING: result.data.data.candles
                 if (response.ok && result.success && result.data?.data?.candles) {
                     const rawCandles = result.data.data.candles;
-
-                    // Upstox V3 returns arrays: [timestamp, open, high, low, close, volume, ...]
                     const formattedData = rawCandles.map(item => {
                         const dateObj = new Date(item[0]);
                         const cleanTime = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -86,21 +89,74 @@ const CompanyDashboard = () => {
             }
         };
 
-        if (companySymbol) {
-            fetchHistory();
-        }
+        if (companySymbol) fetchHistory();
     }, [companySymbol, activePeriod]); 
 
+    //Fetch AI Verdict
     useEffect(() => {
+        const fetchVerdict = async () => {
+            setVerdictLoading(true);
+            setAiReports(null); // Clear old reports for new stocks
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/ai-verdict/decision/${companySymbol}`);
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    setAiVerdict(result.data);
+                } else {
+                    setAiVerdict(null);
+                }
+            } catch (error) {
+                console.error("Failed to fetch AI verdict", error);
+                setAiVerdict(null);
+            } finally {
+                setVerdictLoading(false);
+            }
+        };
 
-        if(loading) return;//Don't connect to websocket until historical data is finished loading
+        if (companySymbol) fetchVerdict();
+    }, [companySymbol]);
+
+
+    //Fetch Detailed Reports
+    const handleViewReports = async () => {
+        if (!aiVerdict?.analysis_id) return;
+
+        // If already fetched, just scroll down smoothly 
+        if (aiReports) {
+            reportsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            return;
+        }
+
+        setReportsLoading(true);
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/ai-verdict/report/${aiVerdict.analysis_id}`);
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                setAiReports(result.data);
+                
+                //First let the AIReports load fully, only then scroll to the bottom
+                setTimeout(() => {
+                    reportsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                }, 150);
+            }
+        } catch (error) {
+            console.error("Failed to fetch detailed reports", error);
+        } finally {
+            setReportsLoading(false);
+        }
+    };
+
+    //WebSocket Live Data
+    useEffect(() => {
+        if(loading) return;
         
-        const socket = io(WEBSOCKET_URL); //Connect to the websocket server
+        const socket = io(WEBSOCKET_URL); 
+        socket.emit('subscribe', companySymbol); 
 
-        socket.emit('subscribe', companySymbol); //Tell the server which company 
-
-        socket.on('live_data', (newTick) => { //Dummy ticks from server
-
+        socket.on('live_data', (newTick) => { 
             setError(null);
             setChartData((prevData) => {
                 const tickTime = new Date(newTick.time).toLocaleTimeString('en-GB', { 
@@ -110,7 +166,7 @@ const CompanyDashboard = () => {
                     ...newTick,
                     time: tickTime
                 };
-                return [...prevData, formattedTick]; //Attach the new tick
+                return [...prevData, formattedTick]; 
             });
         });
 
@@ -123,6 +179,7 @@ const CompanyDashboard = () => {
 
     return (
         <div className={styles.dashboardContainer}>
+            {/* Header Section */}
             <div className={styles.headerInfo}>
                 <div className={styles.topRow}>
                     <h1 className={styles.stockName}>{companySymbol}</h1>
@@ -150,7 +207,10 @@ const CompanyDashboard = () => {
                 )}
             </div>
 
+            {/* Chart and AI Analysis Section */}
             <div className={styles.chartAnalysisContainer}>
+                
+                {/* Chart Section (Left) */}
                 <div className={styles.chartSection}>
                     <div className={styles.chartWrapper}>
                         {loading ? (
@@ -190,22 +250,68 @@ const CompanyDashboard = () => {
                     </div>
                 </div>
 
+                {/* AI Analysis Section*/}
                 <div className={styles.aiAnalysisSection}>
-                    <div className={styles.aiAnalysisWrapper}>
-                        <h3 className={styles.aiAnalysisTitle}>AI Analysis</h3>
-                        <div className={styles.aiAnalysisContent}>
-                            <div className={styles.analysisCard}>
-                                <div className={styles.cardHeader}>
-                                    <span className={styles.cardLabel}>Market Sentiment</span>
-                                    <span className={styles.sentimentBadge}>Bullish</span>
-                                </div>
-                                <p className={styles.cardText}>Analysis based on historical patterns suggests upward momentum.</p>
-                            </div>
+                    <div className={styles.aiSidebarContainer}>
+                        
+                        {/*Verdict Card */}
+                        <div className={styles.verdictTopBox}>
+                            <h3 className={styles.aiAnalysisTitle}>Expert AI Verdict</h3>
+                            
+                            {verdictLoading ? (
+                                <p style={{ color: '#94a3b8' }}>Analyzing latest market data...</p>
+                            ) : aiVerdict ? (
+                                <>
+                                    <div className={styles.cardHeader}>
+                                        <span className={styles.cardLabel}>Market Sentiment</span>
+                                        <span className={`${styles.verdictBadge} ${
+                                            aiVerdict.decision === 'BUY' ? styles.buy : 
+                                            aiVerdict.decision === 'SELL' ? styles.sell : styles.hold
+                                        }`}>
+                                            {aiVerdict.decision}
+                                        </span>
+                                    </div>
+                                    
+                                    <p className={styles.verdictDate}>
+                                        Generated on: {new Date(aiVerdict.trade_date).toLocaleDateString('en-GB')}
+                                    </p>
+
+                                    <button 
+                                        onClick={handleViewReports} 
+                                        className={styles.viewReportBtn}
+                                        disabled={reportsLoading}
+                                    >
+                                        {reportsLoading ? "Loading Reports..." : "View Detailed Report ↓"}
+                                    </button>
+                                </>
+                            ) : (
+                                <p style={{ color: '#94a3b8' }}>No AI analysis available for this stock yet.</p>
+                            )}
                         </div>
+
+                        {/*Reports */}
+                        {aiReports && (
+                            <div className={styles.reportsScrollArea}>
+                                <h4 className={styles.reportTitle}>Agent Reports</h4>
+                                
+                                {aiReports.map((agent, index) => (
+                                    <div key={index} className={styles.agentReportCard}>
+                                        <h5 className={styles.agentName}>{agent.agent_name.toUpperCase()} ANALYSIS</h5>
+                                        <div className={styles.markdownContent}>
+                                            <ReactMarkdown>{agent.report}</ReactMarkdown>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                {/* Target for smooth scrolling */}
+                                <div ref={reportsEndRef} style={{ height: '10px' }} /> 
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
+            {/* Real Data Table Section */}
             <div className={styles.tableContainer}>
                 <h3 className={styles.tableTitle}>Price History</h3>
                 {chartData.length > 0 ? (
