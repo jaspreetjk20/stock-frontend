@@ -555,3 +555,317 @@ html, body {
     font-size: 0.8rem;
   }
 }
+
+/* Markdown Table Styling for AI Reports */
+
+.markdownContent table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.markdownContent thead {
+    background: rgba(59, 130, 246, 0.1);
+    border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+.markdownContent th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #60a5fa;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.markdownContent td {
+    padding: 12px 16px;
+    color: #e2e8f0;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.markdownContent tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.markdownContent tbody tr:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+/* Alternating row colors for better readability */
+.markdownContent tbody tr:nth-child(even) {
+    background: rgba(15, 23, 42, 0.3);
+}
+
+/* Strong text in tables */
+.markdownContent table strong {
+    color: #60a5fa;
+    font-weight: 600;
+}
+
+/* Code blocks in tables */
+.markdownContent table code {
+    background: rgba(59, 130, 246, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #93c5fd;
+}
+
+/* LaTeX/Math rendering */
+.markdownContent .katex {
+    font-size: 1.1em;
+    color: #e2e8f0;
+}
+
+.markdownContent .katex-display {
+    margin: 1rem 0;
+}
+
+/* Detailed Reports Container */
+.detailedReportsContainer {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 12px;
+}
+
+.reportsMainTitle {
+    font-size: 1.5rem;
+    color: #fff;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+/* Accordion Container */
+.reportsAccordion {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 900px; /* Defined reading width */
+    margin: 0 auto; /* Center the accordion */
+}
+
+/* Individual Accordion Item */
+.accordionItem {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.accordionItem:hover {
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+/* Accordion Header (Clickable) */
+.accordionHeader {
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.accordionHeader:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.accordionHeader.expanded {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.accordionHeaderContent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+}
+
+.agentName {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #60a5fa;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+.accordionIcon {
+    font-size: 1.5rem;
+    color: #60a5fa;
+    font-weight: 300;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Accordion Content (Expandable) */
+.accordionContent {
+    border-top: 1px solid rgba(148, 163, 184, 0.1);
+    padding: 1.5rem;
+    background: rgba(15, 23, 42, 0.4);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Markdown Content Styling */
+.markdownContent {
+    color: #e2e8f0;
+    line-height: 1.7;
+    font-size: 15px;
+}
+
+.markdownContent h1,
+.markdownContent h2,
+.markdownContent h3,
+.markdownContent h4 {
+    color: #60a5fa;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.markdownContent h1 { font-size: 1.75rem; }
+.markdownContent h2 { font-size: 1.5rem; }
+.markdownContent h3 { font-size: 1.25rem; }
+.markdownContent h4 { font-size: 1.1rem; }
+
+.markdownContent p {
+    margin-bottom: 1rem;
+}
+
+.markdownContent ul,
+.markdownContent ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.markdownContent li {
+    margin-bottom: 0.5rem;
+}
+
+.markdownContent strong {
+    color: #93c5fd;
+    font-weight: 600;
+}
+
+.markdownContent code {
+    background: rgba(59, 130, 246, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #93c5fd;
+}
+
+.markdownContent pre {
+    background: rgba(15, 23, 42, 0.8);
+    padding: 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+
+.markdownContent pre code {
+    background: transparent;
+    padding: 0;
+}
+
+/* Markdown Tables */
+.markdownContent table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.markdownContent thead {
+    background: rgba(59, 130, 246, 0.1);
+    border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+.markdownContent th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #60a5fa;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.markdownContent td {
+    padding: 12px 16px;
+    color: #e2e8f0;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.markdownContent tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.markdownContent tbody tr:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.markdownContent tbody tr:nth-child(even) {
+    background: rgba(15, 23, 42, 0.3);
+}
+
+.markdownContent table strong {
+    color: #60a5fa;
+    font-weight: 600;
+}
+
+.markdownContent table code {
+    background: rgba(59, 130, 246, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #93c5fd;
+}
+
+/* LaTeX/Math rendering */
+.markdownContent .katex {
+    font-size: 1.1em;
+    color: #e2e8f0;
+}
+
+.markdownContent .katex-display {
+    margin: 1rem 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .reportsAccordion {
+        max-width: 100%;
+    }
+    
+    .accordionHeaderContent {
+        padding: 1rem;
+    }
+    
+    .accordionContent {
+        padding: 1rem;
+    }
+}

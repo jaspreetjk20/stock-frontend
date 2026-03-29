@@ -3,7 +3,11 @@ import { useParams } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import styles from './CompanyDashboard.module.css';
 import { io } from 'socket.io-client';
-import ReactMarkdown from 'react-markdown'; // Added for formatting reports
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm'; // GitHub Flavored Markdown (supports tables)
+import remarkMath from 'remark-math'; // Math syntax support
+import rehypeKatex from 'rehype-katex'; // LaTeX rendering
+import 'katex/dist/katex.min.css'; // KaTeX CSS for proper rendering
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
 const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL; 
@@ -32,6 +36,47 @@ const getDateRange = (period) => {
     };
 };
 
+// Custom Tooltip Component
+const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+            <div style={{
+                backgroundColor: '#0f172a',
+                border: '1px solid #334155',
+                borderRadius: '8px',
+                padding: '12px',
+                color: '#fff',
+                fontSize: '13px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+            }}>
+                <p style={{ margin: '0 0 8px 0', fontWeight: '600', color: '#60a5fa' }}>
+                    {data.time}
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+                        <span style={{ color: '#94a3b8' }}>Open:</span>
+                        <span style={{ fontWeight: '500' }}>₹{data.open.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+                        <span style={{ color: '#94a3b8' }}>High:</span>
+                        <span style={{ fontWeight: '500', color: '#22c55e' }}>₹{data.high.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+                        <span style={{ color: '#94a3b8' }}>Low:</span>
+                        <span style={{ fontWeight: '500', color: '#ef4444' }}>₹{data.low.toFixed(2)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+                        <span style={{ color: '#94a3b8' }}>Close:</span>
+                        <span style={{ fontWeight: '500' }}>₹{data.close.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
 const CompanyDashboard = () => {
     const { companySymbol } = useParams();
     const [activePeriod, setActivePeriod] = useState('3M'); 
@@ -44,7 +89,16 @@ const CompanyDashboard = () => {
     const [aiReports, setAiReports] = useState(null);
     const [verdictLoading, setVerdictLoading] = useState(true);
     const [reportsLoading, setReportsLoading] = useState(false);
-    const reportsEndRef = useRef(null); 
+    const [expandedReports, setExpandedReports] = useState([]); // Track which reports are expanded
+
+    // Toggle individual report expansion
+    const toggleReport = (index) => {
+        setExpandedReports(prev => 
+            prev.includes(index) 
+                ? prev.filter(i => i !== index) 
+                : [...prev, index]
+        );
+    }; 
 
     // 1. Fetch Historical Chart Data
     useEffect(() => {
@@ -123,9 +177,8 @@ const CompanyDashboard = () => {
     const handleViewReports = async () => {
         if (!aiVerdict?.analysis_id) return;
 
-        // If already fetched, just scroll down smoothly 
+        // If already fetched, do nothing (reports are already visible below)
         if (aiReports) {
-            reportsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
             return;
         }
 
@@ -136,11 +189,6 @@ const CompanyDashboard = () => {
             
             if (response.ok && result.success) {
                 setAiReports(result.data);
-                
-                //First let the AIReports load fully, only then scroll to the bottom
-                setTimeout(() => {
-                    reportsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-                }, 150);
             }
         } catch (error) {
             console.error("Failed to fetch detailed reports", error);
@@ -186,9 +234,6 @@ const CompanyDashboard = () => {
                     {latestData ? (
                         <div className={styles.priceVolume}>
                             <h2 className={styles.currentPrice}>₹{latestData.close.toFixed(2)}</h2>
-                            {latestData.volume != null && (
-                                <span className={styles.volumeBadge}>Vol: {Number(latestData.volume).toLocaleString()}</span>
-                            )}
                         </div>
                     ) : (
                         <h2 className={styles.currentPrice}>--</h2>
@@ -229,7 +274,7 @@ const CompanyDashboard = () => {
                                     <CartesianGrid strokeDasharray="0" vertical={false} stroke="rgba(148, 163, 184, 0.15)" />
                                     <XAxis dataKey="time" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                                     <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11, fill: '#94a3b8' }} orientation="right" axisLine={false} tickLine={false} />
-                                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                                    <Tooltip content={<CustomTooltip />} />
                                     <Area type="monotone" dataKey="close" stroke="#3b82f6" strokeWidth={2} fill="url(#colorClose)" isAnimationActive={false} />
                                 </AreaChart>
                             </ResponsiveContainer>
@@ -288,59 +333,48 @@ const CompanyDashboard = () => {
                                 <p style={{ color: '#94a3b8' }}>No AI analysis available for this stock yet.</p>
                             )}
                         </div>
-
-                        {/*Reports */}
-                        {aiReports && (
-                            <div className={styles.reportsScrollArea}>
-                                <h4 className={styles.reportTitle}>Agent Reports</h4>
-                                
-                                {aiReports.map((agent, index) => (
-                                    <div key={index} className={styles.agentReportCard}>
-                                        <h5 className={styles.agentName}>{agent.agent_name.toUpperCase()} ANALYSIS</h5>
-                                        <div className={styles.markdownContent}>
-                                            <ReactMarkdown>{agent.report}</ReactMarkdown>
-                                        </div>
-                                    </div>
-                                ))}
-                                
-                                {/* Target for smooth scrolling */}
-                                <div ref={reportsEndRef} style={{ height: '10px' }} /> 
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Real Data Table Section */}
-            <div className={styles.tableContainer}>
-                <h3 className={styles.tableTitle}>Price History</h3>
-                {chartData.length > 0 ? (
-                    <table className={styles.dataTable}>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Open (₹)</th>
-                                <th>High (₹)</th>
-                                <th>Low (₹)</th>
-                                <th>Close (₹)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {chartData.slice().reverse().map((row, index) => (
-                                <tr key={index}>
-                                    <td>{row.time}</td>
-                                    <td>{row.open.toFixed(2)}</td>
-                                    <td>{row.high.toFixed(2)}</td>
-                                    <td>{row.low.toFixed(2)}</td>
-                                    <td>{row.close.toFixed(2)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                ) : (
-                    <p>No historical data available.</p>
-                )}
-            </div>
+            {/* Detailed Reports Section - Below Chart */}
+            {aiReports && (
+                <div className={styles.detailedReportsContainer}>
+                    <h3 className={styles.reportsMainTitle}>Detailed AI Analysis Reports</h3>
+                    <div className={styles.reportsAccordion}>
+                        {aiReports.map((agent, index) => (
+                            <div key={index} className={styles.accordionItem}>
+                                <button 
+                                    className={`${styles.accordionHeader} ${expandedReports.includes(index) ? styles.expanded : ''}`}
+                                    onClick={() => toggleReport(index)}
+                                >
+                                    <div className={styles.accordionHeaderContent}>
+                                        <h5 className={styles.agentName}>{agent.agent_name.toUpperCase()} ANALYSIS</h5>
+                                        <span className={styles.accordionIcon}>
+                                            {expandedReports.includes(index) ? '−' : '+'}
+                                        </span>
+                                    </div>
+                                </button>
+                                
+                                {expandedReports.includes(index) && (
+                                    <div className={styles.accordionContent}>
+                                        <div className={styles.markdownContent}>
+                                            <ReactMarkdown 
+                                                remarkPlugins={[remarkGfm, remarkMath]}
+                                                rehypePlugins={[rehypeKatex]}
+                                            >
+                                                {agent.report}
+                                            </ReactMarkdown>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+
         </div>
     );
 };
